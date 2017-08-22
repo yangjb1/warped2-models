@@ -44,15 +44,19 @@ public:
 
 class Node : public warped::LogicalProcess {
 public:
-    Node( const std::string&  name,
-            unsigned int        grid_dimension,
-            unsigned int        grid_size,
-            unsigned int        index )
+    Node( const std::string& name,
+            unsigned int grid_dimension,
+            unsigned int grid_size,
+            unsigned int grid_order,
+            unsigned int dimension_index,     
+            unsigned int index )
 
         :   LogicalProcess(name),
             state_(),
             grid_dimension_(grid_dimension),
             grid_size_(grid_size),
+            grid_order_(grid_order),
+            dimension_index_(dimension_index),
             index_(index) {
     }
 
@@ -66,6 +70,8 @@ public:
 
     unsigned int grid_dimension_;
     unsigned int grid_size_;
+    unsigned int grid_order_;
+    unsigned int dimension_index_;
     unsigned int index_;
 
 protected:
