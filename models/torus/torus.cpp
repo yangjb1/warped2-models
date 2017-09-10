@@ -10,39 +10,61 @@
 #include "ppm/ppm.hpp"
 #include "tclap/ValueArg.h"
 
-#define TS_INTERVAL 1 /* Timestamp interval */
+#define TS_INTERVAL 1 
 
-WARPED_REGISTER_POLYMORPHIC_SERIALIZABLE_CLASS(NodeEvent)
+WARPED_REGISTER_POLYMORPHIC_SERIALIZABLE_CLASS(MessageEvent)
 
-std::string node_name (unsigned int index, unsigned int dimension) {
-    return std::string("Node_") + std::to_string(index) + std::string("_") + std::to_string(dimension);
+std::string node_name (unsigned int index) {
+    return std::string("Node_") + std::to_string(index);
 }
 
 std::vector<std::shared_ptr<warped::Event> > Node::initializeLP() {
     std::vector<std::shared_ptr<warped::Event>> events;
 
-    events.emplace_back( new NodeEvent { node_name(this->index_, this->dimension_index_), TS_INTERVAL } );
+    events.emplace_back( new MessageEvent { node_name(this->index_), TS_INTERVAL } );
 
     return events;
 }
 
 std::vector<std::shared_ptr<warped::Event> > Node::receiveEvent(const warped::Event& event) {
     std::vector<std::shared_ptr<warped::Event>> events;
-    auto node_event = static_cast<const NodeEvent&>(event);
-    unsigned int event_ts = node_event.event_ts_ + TS_INTERVAL;
+    auto message_event = static_cast<const MessageEvent&>(event);
+    unsigned int event_ts = message_event.event_ts_ + TS_INTERVAL;
 
-    events.emplace_back(new NodeEvent {this->name_, event_ts});
+    // ROSS credits the sender
+
+    message_event.hop_count_++;
+
+    // check that a message has reached it's destination
+    if (message_event.receiver_name_ == node_name(this->index_)) {
+        events.emplace_back(new MessageEvent { node_name(this->index_), event_ts });
+    } else {
+        // else, forward on
+        events.emplace_back(new MessageEvent { node_name(neighbor(this->index_, message_event.destination)), event_ts });
+    }
 
     return events;
 }
 
+unsigned int Node::neighbor(unsigned int index, unsigned int destination) {
+    // direction depends on the order of the torus
+
+    // check the shortest path based on destination
+
+    index++;
+    destination++;
+
+    // return a new index
+    return 1;
+}
+
 int main(int argc, const char **argv) {
-    /* Set the default values for the argument */
+    /* Set the default values for arguments */
     unsigned int grid_dimension = 5;
     unsigned int grid_size = 1000;
     unsigned int grid_order = 4;
 
-    /* Read the argument */
+    /* Read arguments */
     TCLAP::ValueArg<unsigned int> grid_dimension_arg("d", "dimension",
                     "Dimensionality of the torus", false, grid_dimension, "unsigned int");
     TCLAP::ValueArg<unsigned int> grid_size_arg("s", "size",
@@ -68,7 +90,7 @@ int main(int argc, const char **argv) {
     /* Torus is a grid of size n with k dimensions */
     for (unsigned int k = 0; k < grid_dimension; k++) {
         for (unsigned int n = 0; n < grid_size; n++) {
-            lps.emplace_back(node_name(n, k), grid_dimension, grid_size, grid_order, k, n);
+            lps.emplace_back(node_name(n), grid_dimension, grid_size, grid_order, k, n);
         }
     }
 

@@ -1,5 +1,5 @@
-#ifndef SAND_HPP
-#define SAND_HPP
+#ifndef TORUS_HPP
+#define TORUS_HPP
 
 #include <string>
 #include <memory>
@@ -7,21 +7,16 @@
 
 #include "warped.hpp"
 
-WARPED_DEFINE_LP_STATE_STRUCT(NodeState) {};
-
-enum direction_t {
-    LEFT,
-    RIGHT,
-    DOWN,
-    UP
+WARPED_DEFINE_LP_STATE_STRUCT(NodeState) {
+    bool available_ = true;
 };
 
-class NodeEvent : public warped::Event {
+class MessageEvent : public warped::Event {
 public:
-    NodeEvent() = default;
+    MessageEvent() = default;
 
-    NodeEvent(  const std::string   receiver_name,
-                unsigned int        event_ts  )
+    MessageEvent( const std::string   receiver_name,
+                  unsigned int        event_ts  )
 
         :   receiver_name_(receiver_name),
             event_ts_(event_ts) {}
@@ -35,6 +30,9 @@ public:
     }
 
     std::string     receiver_name_;
+    std::string     destination_name;
+    unsigned int  destination;
+    unsigned int    hop_count_;
     unsigned int    event_ts_;
 
     WARPED_REGISTER_SERIALIZABLE_MEMBERS(cereal::base_class<warped::Event>(this),
@@ -75,7 +73,7 @@ public:
     unsigned int index_;
 
 protected:
-    unsigned int neighbor(unsigned int index, direction_t direction);
+    unsigned int neighbor(unsigned int index, unsigned int destination);
 };
 
 #endif
